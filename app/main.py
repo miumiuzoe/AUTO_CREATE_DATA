@@ -10,6 +10,7 @@ from app.models import DatabaseConfig
 
 def get_resource_dir() -> Path:
     if getattr(sys, "frozen", False):
+        # PyInstaller 打包后优先读取可执行文件同级目录下可覆盖的配置。
         external_dir = Path(sys.executable).resolve().parent
         if (external_dir / "sql").exists() and (external_dir / "fakedata").exists():
             return external_dir

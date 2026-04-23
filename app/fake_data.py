@@ -17,6 +17,7 @@ class FakeDataBuilder:
         return "\t".join(values)
 
     def build_value(self, field: FieldInfo) -> str:
+        # 先按英文字段名匹配，再按中文字段名匹配，最后回退到默认值。
         for rule in self.rules:
             if rule["eng"] and rule["eng"] in field.iof_engname.upper():
                 return _resolve_rule_value(rule["value"], self.faker)

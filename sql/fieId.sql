@@ -1,5 +1,17 @@
 --查询协议字段信息
-select * from xxxx
-
+SELECT
+    IOF_ID,
+    IOF_ENG AS IOF_ENGNAME,
+    IOF_CHI AS IOF_CHINAME
+FROM INPUT_OBJF
+WHERE OOBJ_ID = (
+    SELECT OOBJ_ID
+    FROM INPUT_OBJT
+    WHERE OBJ_ID = (
+        SELECT OBJ_ID
+        FROM OBJ_TABLE
+        WHERE OBJ_ENG = :obj_engname
+    )
+);
 --查询协议的SYS_ID
-select SYS_ID from DDDD
+SELECT SYS_ID FROM OBJ_TABLE WHERE OBJ_ENG = :obj_engname;

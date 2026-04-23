@@ -1,4 +1,0 @@
-IOF_ID	IOF_ENGNAME		IOF_CHINAME
-1       CLUE_ID		    电话字段1
-2       CLUE_SRC_SYS	字段2
-3       CLUE_DST_SYS	字段3

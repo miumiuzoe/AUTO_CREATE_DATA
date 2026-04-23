@@ -32,6 +32,10 @@ def read_sql_blocks(path: Path) -> Tuple[str, str]:
                 current = []
             continue
         if line.startswith("--"):
+            # 注释行也视为 SQL 段落分隔，避免两段 SQL 之间没有空行时被拼在一起。
+            if current:
+                blocks.append("\n".join(current).strip())
+                current = []
             continue
         current.append(raw_line.rstrip(";"))
 

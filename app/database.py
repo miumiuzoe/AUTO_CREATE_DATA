@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import URL, create_engine, text
 
 from app.models import DatabaseConfig, FieldInfo
 
@@ -17,15 +17,22 @@ def build_engine(config: DatabaseConfig):
     else:
         raise ValueError(f"不支持的数据库类型: {config.db_type}")
 
-    url = (
-        f"{driver}://{config.username}:{config.password}"
-        f"@{config.host}:{config.port}/{config.database}"
+    # 使用结构化 URL，避免密码中的 @ 等特殊字符破坏连接串解析。
+    url = URL.create(
+        drivername=driver,
+        username=config.username,
+        password=config.password,
+        host=config.host,
+        port=config.port,
+        database=config.database,
     )
     return create_engine(url)
 
 
 def query_fields(engine, sql_text: str, protocol_name: str) -> List[FieldInfo]:
     rows = _query(engine, sql_text, protocol_name)
+    if not rows:
+        raise ValueError(f"未找到协议或协议下无字段: {protocol_name}")
     result = []
     for row in rows:
         data = {str(key).upper(): value for key, value in row.items()}
@@ -42,12 +49,13 @@ def query_fields(engine, sql_text: str, protocol_name: str) -> List[FieldInfo]:
 def query_sys_id(engine, sql_text: str, protocol_name: str) -> str:
     rows = _query(engine, sql_text, protocol_name)
     if not rows:
-        raise ValueError("未查询到 SYS_ID。")
+        raise ValueError(f"未找到协议: {protocol_name}")
     data = {str(key).upper(): value for key, value in rows[0].items()}
     return str(data["SYS_ID"])
 
 
 def _query(engine, sql_text: str, protocol_name: str) -> List[Dict]:
     with engine.begin() as connection:
+        # fieId.sql 中统一使用 :obj_engname 占位。
         result = connection.execute(text(sql_text), {"obj_engname": protocol_name})
         return [dict(row._mapping) for row in result]
