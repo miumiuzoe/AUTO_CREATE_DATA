@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 from typing import Tuple
 
 import yaml
@@ -21,26 +22,17 @@ def read_yaml(path: Path) -> dict:
 
 
 def read_sql_blocks(path: Path) -> Tuple[str, str]:
-    blocks = []
-    current = []
+    sql_text = read_text(path)
+    sql_text = re.sub(r"/\*.*?\*/", "", sql_text, flags=re.S)
 
-    for raw_line in read_text(path).splitlines():
+    lines = []
+    for raw_line in sql_text.splitlines():
         line = raw_line.strip()
-        if not line:
-            if current:
-                blocks.append("\n".join(current).strip())
-                current = []
+        if not line or line.startswith("--"):
             continue
-        if line.startswith("--"):
-            # 注释行也视为 SQL 段落分隔，避免两段 SQL 之间没有空行时被拼在一起。
-            if current:
-                blocks.append("\n".join(current).strip())
-                current = []
-            continue
-        current.append(raw_line.rstrip(";"))
+        lines.append(raw_line)
 
-    if current:
-        blocks.append("\n".join(current).strip())
+    blocks = [block.strip() for block in "\n".join(lines).split(";") if block.strip()]
 
     if len(blocks) < 2:
         raise ValueError("sql/fieId.sql 需要包含两段 SQL。")

@@ -1,2 +1,6 @@
 DIANHUA[电话]: faker.phonenumber()
-KAHAO[卡号]: [45648654123,22352625,57586645]
+KAHAO[卡号]: [45648654123, 22352625, 57586645]
+CITY[城市]: SELECT city_code FROM bscdata.city
+TIME[时间]: date_methods.now_timestamp_ms()
+NAME[姓名]: faker.name()
+STATUS[状态]: [0,1]

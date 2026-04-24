@@ -1,8 +1,8 @@
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from sqlalchemy import URL, create_engine, text
 
-from app.models import DatabaseConfig, FieldInfo
+from app.models import DatabaseConfig, FieldInfo, ProtocolOption
 
 
 def build_engine(config: DatabaseConfig):
@@ -17,7 +17,6 @@ def build_engine(config: DatabaseConfig):
     else:
         raise ValueError(f"不支持的数据库类型: {config.db_type}")
 
-    # 使用结构化 URL，避免密码中的 @ 等特殊字符破坏连接串解析。
     url = URL.create(
         drivername=driver,
         username=config.username,
@@ -29,10 +28,34 @@ def build_engine(config: DatabaseConfig):
     return create_engine(url)
 
 
-def query_fields(engine, sql_text: str, protocol_name: str) -> List[FieldInfo]:
-    rows = _query(engine, sql_text, protocol_name)
+def query_protocols(engine, sql_text: str, protocol_name: str) -> List[ProtocolOption]:
+    rows = _query(engine, sql_text, {"obj_engname": protocol_name})
     if not rows:
-        raise ValueError(f"未找到协议或协议下无字段: {protocol_name}")
+        raise ValueError(f"未找到协议: {protocol_name}")
+
+    result = []
+    for row in rows:
+        data = {str(key).upper(): value for key, value in row.items()}
+        if "OBJ_GUID" not in data:
+            raise ValueError("协议查询结果中缺少 OBJ_GUID 字段。")
+        if "SYS_ID" not in data:
+            raise ValueError("协议查询结果中缺少 SYS_ID 字段。")
+
+        result.append(
+            ProtocolOption(
+                obj_guid=str(data["OBJ_GUID"]),
+                sys_id=str(data["SYS_ID"]),
+                data=data,
+            )
+        )
+    return result
+
+
+def query_fields(engine, sql_text: str, obj_guid: str, obj_engname: str) -> List[FieldInfo]:
+    rows = _query(engine, sql_text, {"obj_guid": obj_guid, "obj_engname": obj_engname})
+    if not rows:
+        raise ValueError(f"未找到 OBJ_GUID={obj_guid} 对应的协议字段。")
+
     result = []
     for row in rows:
         data = {str(key).upper(): value for key, value in row.items()}
@@ -46,16 +69,16 @@ def query_fields(engine, sql_text: str, protocol_name: str) -> List[FieldInfo]:
     return sorted(result, key=lambda item: item.iof_id)
 
 
-def query_sys_id(engine, sql_text: str, protocol_name: str) -> str:
-    rows = _query(engine, sql_text, protocol_name)
-    if not rows:
-        raise ValueError(f"未找到协议: {protocol_name}")
-    data = {str(key).upper(): value for key, value in rows[0].items()}
-    return str(data["SYS_ID"])
+def query_values(engine, sql_text: str) -> List[Any]:
+    rows = _query(engine, sql_text, {})
+    values = []
+    for row in rows:
+        if row:
+            values.append(next(iter(row.values())))
+    return values
 
 
-def _query(engine, sql_text: str, protocol_name: str) -> List[Dict]:
+def _query(engine, sql_text: str, params: Dict[str, Any]) -> List[Dict[str, Any]]:
     with engine.begin() as connection:
-        # fieId.sql 中统一使用 :obj_engname 占位。
-        result = connection.execute(text(sql_text), {"obj_engname": protocol_name})
+        result = connection.execute(text(sql_text), params)
         return [dict(row._mapping) for row in result]
