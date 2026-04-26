@@ -2,6 +2,11 @@
 
 该脚本用于根据协议英文名，从数据库查询协议及其字段信息，自动生成一条测试数据，并输出为 `.bcp` 文件。
 
+当前提供两个独立入口：
+
+- `auto_create_data.py`：生成单个协议数据文件
+- `batch_create_data.py`：批量生成协议数据文件
+
 ## 功能说明
 
 脚本执行流程如下：
@@ -15,10 +20,10 @@
 
 ## 目录结构
 
-- [app/main.py](/Users/zxw/vscodeworkspace/demo/AUTO_CREATE_DATA/app/main.py)：程序入口
-- [sql/database.yml](/Users/zxw/vscodeworkspace/demo/AUTO_CREATE_DATA/sql/database.yml)：数据库连接配置
-- [sql/fieId.sql](/Users/zxw/vscodeworkspace/demo/AUTO_CREATE_DATA/sql/fieId.sql)：协议查询 SQL 和字段查询 SQL
-- [fakedata/fake.yml](/Users/zxw/vscodeworkspace/demo/AUTO_CREATE_DATA/fakedata/fake.yml)：字段模拟数据规则
+- `app/main.py`：程序入口
+- `sql/database.yml`：数据库连接配置
+- `sql/fieId.sql`：协议查询 SQL 和字段查询 SQL
+- `fakedata/fake.yml`：字段模拟数据规则
 - `/output`：生成的 `.bcp` 文件输出目录
 
 ## 运行前准备
@@ -32,11 +37,11 @@
      - PostgreSQL：`pg8000`
      - Oracle：`oracledb`
 3. 确保数据库可连接，且相关表、字段存在。
-4. 根据实际环境修改数据库配置文件 [sql/database.yml](/Users/zxw/vscodeworkspace/demo/AUTO_CREATE_DATA/sql/database.yml)。
+4. 根据实际环境修改数据库配置文件 `sql/database.yml`。
 
 ## 数据库配置
 
-在 [sql/database.yml](/Users/zxw/vscodeworkspace/demo/AUTO_CREATE_DATA/sql/database.yml) 中配置：
+在 `sql/database.yml` 中配置：
 
 ```yaml
 db_type: mysql
@@ -54,7 +59,7 @@ password: 123456
 
 ## SQL 配置说明
 
-[sql/fieId.sql](/Users/zxw/vscodeworkspace/demo/AUTO_CREATE_DATA/sql/fieId.sql) 需要包含两段 SQL。
+`sql/fieId.sql` 需要包含两段 SQL。
 
 第一段：查询协议候选结果。必须至少返回以下字段：
 
@@ -107,6 +112,68 @@ ABC_PROTOCOL
 ABC_PROTOCOL,XYZ_PROTOCOL
 ```
 
+## 批量生成
+
+批量生成使用独立脚本：
+
+```bash
+python3 batch_create_data.py
+```
+
+启动后会依次提示：
+
+1. 输入协议英文名
+2. 选择批量生成方式
+3. 输入单文件限制值
+4. 输入要生成的文件个数
+
+支持两种方式：
+
+### 按单个文件大小限制
+
+示例：
+
+```text
+请输入协议英文名: ABC_PROTOCOL
+请选择批量生成方式：
+1. 按单个文件大小限制
+2. 按单个文件记录条数限制
+请输入序号(1/2): 1
+请输入单个文件大小限制(MB): 100
+请输入要生成的文件个数: 10
+```
+
+含义：
+
+- 生成 10 个文件
+- 每个文件尽量不超过 `100 MB`
+- 若一条记录都放不下，仍会至少写入 1 条记录
+
+批量生成过程中会打印类似信息：
+
+```text
+[1/10] 生成成功: output/1001-310000-1714132800-12345-ABC_PROTOCOL-0.bcp，记录数=158234，文件大小=100.00 MB（104857600 字节）
+```
+
+### 按单个文件记录条数限制
+
+示例：
+
+```text
+请输入协议英文名: ABC_PROTOCOL
+请选择批量生成方式：
+1. 按单个文件大小限制
+2. 按单个文件记录条数限制
+请输入序号(1/2): 2
+请输入单个文件记录条数限制: 1000
+请输入要生成的文件个数: 10
+```
+
+含义：
+
+- 生成 10 个文件
+- 每个文件写入 1000 条记录
+
 ## 交互逻辑
 
 ### 查询到单条协议
@@ -131,9 +198,9 @@ ABC_PROTOCOL,XYZ_PROTOCOL
 字段数据生成规则如下：
 
 1. 字段顺序按 `IOF_ID` 升序排列。
-2. 若字段未命中 [fakedata/fake.yml](/Users/zxw/vscodeworkspace/demo/AUTO_CREATE_DATA/fakedata/fake.yml) 中的规则，则默认生成空字符串。
+2. 若字段未命中 `fakedata/fake.yml` 中的规则，则默认生成空字符串。
 3. 所有字段使用 `Tab` 分隔，组成一条完整记录。
-4. 若 [fakedata/fake.yml](/Users/zxw/vscodeworkspace/demo/AUTO_CREATE_DATA/fakedata/fake.yml) 中为某些字段配置了特殊规则，则优先按配置生成。
+4. 若 `fakedata/fake.yml` 中为某些字段配置了特殊规则，则优先按配置生成。
 
 ## 输出结果
 
@@ -160,7 +227,9 @@ ABC_PROTOCOL 生成成功: /Users/zxw/vscodeworkspace/demo/AUTO_CREATE_DATA/outp
 2. 是否大小写敏感，取决于数据库及字段比较规则。
 3. 若协议查询结果缺少 `OBJ_GUID` 或 `SYS_ID`，脚本会直接报错。
 4. 若字段查询结果为空，脚本会报错，提示未找到对应字段信息。
-5. [sql/fieId.sql](/Users/zxw/vscodeworkspace/demo/AUTO_CREATE_DATA/sql/fieId.sql) 中必须是两段真实可执行 SQL。
+5. `sql/fieId.sql` 中必须是两段真实可执行 SQL。
+6. 批量生成脚本一次只处理一个协议英文名。
+7. 按大小生成时，文件大小按 UTF-8 编码后的实际字节数计算，单位输入为 `MB`。
 
 ## 常见报错说明
 
