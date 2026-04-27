@@ -22,7 +22,7 @@ class FakeDataBuilder:
 
     def build_value(self, field: FieldInfo) -> str:
         for rule in self.rules:
-            if rule["eng"] and rule["eng"] in field.iof_engname.upper():
+            if rule["eng"] and rule["eng"] == field.iof_engname.upper():
                 return self._resolve_rule_value(rule["value"])
             if rule["zh"] and rule["zh"] in field.iof_chiname:
                 return self._resolve_rule_value(rule["value"])
