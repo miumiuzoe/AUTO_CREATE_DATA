@@ -3,45 +3,27 @@ from datetime import datetime, timedelta
 
 
 def now_yyyymmdd() -> str:
-    """
-    返回当前日期，格式为 YYYYMMDD。
-    """
+    """返回当前日期，格式为 YYYYMMDD。"""
     return datetime.now().strftime("%Y%m%d")
 
 
 def now_yyyymmddhhmmss() -> str:
-    """
-    返回当前日期时间，格式为 YYYYMMDDHHMMSS。
-    """
+    """返回当前日期时间，格式为 YYYYMMDDHHMMSS。"""
     return datetime.now().strftime("%Y%m%d%H%M%S")
 
 
 def now_timestamp_ms() -> int:
-    """
-    返回当前 13 位毫秒时间戳。
-    """
+    """返回当前时间戳值，保持兼容已有 fake.yml 规则。"""
     return int(datetime.now().timestamp())
 
 
 def days_ago(days: int, fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
-    """
-    返回当前时间往前推指定天数后的时间字符串。
-
-    参数:
-    days: 往前推的天数。
-    fmt: 返回结果格式，默认 "%Y-%m-%d %H:%M:%S"。
-    """
+    """返回当前时间向前推指定天数后的格式化时间。"""
     return (datetime.now() - timedelta(days=days)).strftime(fmt)
 
 
 def days_later(days: int, fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
-    """
-    返回当前时间往后推指定天数后的时间字符串。
-
-    参数:
-    days: 往后推的天数。
-    fmt: 返回结果格式，默认 "%Y-%m-%d %H:%M:%S"。
-    """
+    """返回当前时间向后推指定天数后的格式化时间。"""
     return (datetime.now() + timedelta(days=days)).strftime(fmt)
 
 
@@ -50,14 +32,7 @@ def random_datetime_between(
     end: str,
     fmt: str = "%Y-%m-%d %H:%M:%S",
 ) -> str:
-    """
-    在开始时间和结束时间之间随机生成一个时间点，并按指定格式返回。
-
-    参数:
-    start: 开始时间字符串，格式需与 fmt 一致。
-    end: 结束时间字符串，格式需与 fmt 一致。
-    fmt: 时间格式，默认 "%Y-%m-%d %H:%M:%S"。
-    """
+    """返回开始时间和结束时间之间的随机格式化时间。"""
     start_dt = datetime.strptime(start, fmt)
     end_dt = datetime.strptime(end, fmt)
     if end_dt < start_dt:
@@ -73,12 +48,5 @@ def random_date_between(
     end: str,
     fmt: str = "%Y-%m-%d",
 ) -> str:
-    """
-    在开始日期和结束日期之间随机生成一个日期，并按指定格式返回。
-
-    参数:
-    start: 开始日期字符串，格式需与 fmt 一致。
-    end: 结束日期字符串，格式需与 fmt 一致。
-    fmt: 日期格式，默认 "%Y-%m-%d"。
-    """
+    """返回开始日期和结束日期之间的随机格式化日期。"""
     return random_datetime_between(start, end, fmt)

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MESSAGE>
+  <ITEM key="01A0004" val="obj_engname" />
+  <ITEM key="01A0005" val="sys_id" />
+  <ITEM key="01A0006" val="bcp文件名" />
+  <DATASET name="COMMON_0015" >
+	<DATA>
+		<ITEM key="" eng="" chn=""/>
+	</DATA>
+  </DATASET>
+</MESSAGE>

@@ -2,10 +2,11 @@ from typing import Any, Dict, List
 
 from sqlalchemy import URL, create_engine, text
 
-from app.models import DatabaseConfig, FieldInfo, ProtocolOption
+from common.models import DatabaseConfig, FieldInfo, ProtocolOption
 
 
 def build_engine(config: DatabaseConfig):
+    """根据数据库配置创建 SQLAlchemy 连接引擎。"""
     db_type = config.db_type.lower()
 
     if db_type == "mysql":
@@ -29,6 +30,7 @@ def build_engine(config: DatabaseConfig):
 
 
 def query_protocols(engine, sql_text: str, protocol_name: str) -> List[ProtocolOption]:
+    """根据协议英文名查询协议候选记录。"""
     rows = _query(engine, sql_text, {"obj_engname": protocol_name})
     if not rows:
         raise ValueError(f"未找到协议: {protocol_name}")
@@ -52,6 +54,7 @@ def query_protocols(engine, sql_text: str, protocol_name: str) -> List[ProtocolO
 
 
 def query_fields(engine, sql_text: str, obj_guid: str, obj_engname: str) -> List[FieldInfo]:
+    """查询选中协议对应的字段元数据。"""
     rows = _query(engine, sql_text, {"obj_guid": obj_guid, "obj_engname": obj_engname})
     if not rows:
         raise ValueError(f"未找到 OBJ_GUID={obj_guid} 对应的协议字段。")
@@ -62,6 +65,7 @@ def query_fields(engine, sql_text: str, obj_guid: str, obj_engname: str) -> List
         result.append(
             FieldInfo(
                 iof_id=int(data["IOF_ID"]),
+                iof_keyname=str(data.get("IOF_KEYNAME", "")),
                 iof_engname=str(data["IOF_ENGNAME"]),
                 iof_chiname=str(data.get("IOF_CHINAME", "")),
             )
@@ -70,6 +74,7 @@ def query_fields(engine, sql_text: str, obj_guid: str, obj_engname: str) -> List
 
 
 def query_values(engine, sql_text: str) -> List[Any]:
+    """执行 fake.yml 中的取值 SQL，并返回每行第一列。"""
     rows = _query(engine, sql_text, {})
     values = []
     for row in rows:
@@ -79,6 +84,7 @@ def query_values(engine, sql_text: str) -> List[Any]:
 
 
 def _query(engine, sql_text: str, params: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """执行带参数 SQL，并将结果行转换为字典。"""
     with engine.begin() as connection:
         result = connection.execute(text(sql_text), params)
         return [dict(row._mapping) for row in result]

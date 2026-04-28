@@ -1,4 +1,4 @@
-from app.main import main
+from features.bcp.main import main
 
 
 if __name__ == "__main__":
