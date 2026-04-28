@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List
 from xml.etree import ElementTree
 
-from common.models import FieldInfo
+from common.models import FieldInfo, ZipBinaryEntry
 
 
 def build_zip_name(sys_id: str) -> str:
@@ -24,6 +24,7 @@ def write_zip_package(
     bcp_file_name: str,
     bcp_content: str,
     fields: List[FieldInfo],
+    zip_entries: List[ZipBinaryEntry],
 ) -> Path:
     """写入只包含内存中 BCP 文件和 XML 文件的 ZIP 压缩包。"""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -33,6 +34,8 @@ def write_zip_package(
     with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
         zip_file.writestr(bcp_file_name, bcp_content + "\n")
         zip_file.writestr(template_path.name, xml_content)
+        for entry in zip_entries:
+            zip_file.writestr(entry.relative_path.as_posix(), entry.content)
 
     return zip_path
 

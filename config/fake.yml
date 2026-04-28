@@ -4,3 +4,5 @@ CITY[城市]: SELECT city_code FROM bscdata.city
 TIME[时间]: date_methods.now_timestamp_ms()
 NAME[姓名]: faker.name()
 STATUS[状态]: [0,1]
+FILE_PATH[文件路径]: unstructured_data.generate_zip_unstructured_value(data_type="image", image_format="png", directory_levels=0, size_hint_kb=64)
+OTHER_FILE_PATH[其它文件路径]: unstructured_data.generate_zip_unstructured_value(data_type="video", video_format="mp4", directory_levels=2, dir_name_length=10, size_hint_kb=5089)

@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<MESSAGE>
+  <ITEM key="01A0004" val="TEST_123" />
+  <ITEM key="01A0005" val="501" />
+  <ITEM key="01A0006" val="501-310000-1777382496-77293-TEST_123-0.bcp" />
+  <DATASET name="COMMON_0015">
+    <DATA>
+      <ITEM key="08A0001" eng="CITY_CODE" chn="城市" />
+      <ITEM key="08A0002" eng="NAME" chn="姓名" />
+      <ITEM key="08A0005" eng="MSISDN" chn="电话" />
+      <ITEM key="08A0003" eng="TIME" chn="时间" />
+      <ITEM key="08A0006" eng="FILE_PATH" chn="文件路径" />
+      <ITEM key="08A0007" eng="OTHER_FILE_PATH" chn="其它文件路径" />
+    </DATA>
+  </DATASET>
+</MESSAGE>

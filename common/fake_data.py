@@ -7,7 +7,8 @@ from faker import Faker
 
 from common import date_methods
 from common.database import query_values
-from common.models import FieldInfo
+from common.models import FieldInfo, GeneratedFieldValue, ZipBinaryEntry
+from common import unstructured_data
 
 
 class FakeDataBuilder:
@@ -18,27 +19,43 @@ class FakeDataBuilder:
         self.rules = [_parse_rule(key, value) for key, value in rules.items()]
         self.faker = Faker("zh_CN")
         self.engine = engine
+        self._generated_zip_entries: List[ZipBinaryEntry] = []
+        self.enable_unstructured_data = True
 
     def build_record(self, fields: List[FieldInfo]) -> str:
         """按协议字段顺序生成一条 Tab 分隔记录。"""
+        self._generated_zip_entries = []
         values = [self.build_value(field) for field in fields]
         return "\t".join(values)
 
     def build_value(self, field: FieldInfo) -> str:
         """根据 fake.yml 规则生成单个字段值。"""
         for rule in self.rules:
-            if rule["eng"] and rule["eng"] == field.iof_engname.upper():
-                return self._resolve_rule_value(rule["value"])
+            if rule["eng"] == field.iof_engname.upper():
+                return self._finalize_rule_value(self._resolve_rule_value(rule["value"]))
+
+        for rule in self.rules:
             if rule["zh"] and rule["zh"] in field.iof_chiname:
-                return self._resolve_rule_value(rule["value"])
+                return self._finalize_rule_value(self._resolve_rule_value(rule["value"]))
+
         return ""
+
+    def consume_generated_zip_entries(self) -> List[ZipBinaryEntry]:
+        """返回最近一次记录生成中产生的 ZIP 附件，并清空缓存。"""
+        entries = list(self._generated_zip_entries)
+        self._generated_zip_entries = []
+        return entries
+
+    def set_unstructured_data_enabled(self, enabled: bool) -> None:
+        """控制是否将非结构化数据实际写入 ZIP。"""
+        self.enable_unstructured_data = enabled
 
     def _resolve_rule_value(self, value: Any) -> str:
         """将配置中的规则值解析为最终输出字符串。"""
         if isinstance(value, list):
             if len(value) == 1 and isinstance(value[0], str) and _looks_like_sql(value[0]):
                 return self._resolve_database_query(value[0])
-            return str(self._resolve_rule_value(random.choice(value)))
+            return self._resolve_rule_value(random.choice(value))
 
         if isinstance(value, str):
             faker_result = _resolve_faker_value(value, self.faker)
@@ -54,6 +71,14 @@ class FakeDataBuilder:
 
             return value
 
+        return str(value)
+
+    def _finalize_rule_value(self, value: Any) -> str:
+        """将规则求值结果转成字段值，并记录随字段生成的 ZIP 文件。"""
+        if isinstance(value, GeneratedFieldValue):
+            if self.enable_unstructured_data:
+                self._generated_zip_entries.extend(value.zip_entries)
+            return value.field_value
         return str(value)
 
     def _resolve_database_query(self, sql_text: str) -> str:
@@ -102,10 +127,10 @@ def _resolve_faker_value(rule: str, faker_obj: Faker) -> Optional[str]:
     return str(method(*args, **kwargs))
 
 
-def _resolve_internal_method_value(rule: str) -> Optional[str]:
-    """解析允许调用的内部 date_methods.* 规则。"""
+def _resolve_internal_method_value(rule: str) -> Optional[Any]:
+    """解析允许调用的内部 date_methods.* 和 unstructured_data.* 规则。"""
     stripped = rule.strip()
-    if not stripped.startswith("date_methods."):
+    if not stripped.startswith(("date_methods.", "unstructured_data.")):
         return None
 
     try:
@@ -117,8 +142,11 @@ def _resolve_internal_method_value(rule: str) -> Optional[str]:
         raise ValueError(f"fake.yml 中存在不支持的内部方法调用: {rule}")
 
     safe_globals = {"__builtins__": {}}
-    safe_locals = {"date_methods": date_methods}
-    return str(eval(compile(expression, "<fake_rule>", "eval"), safe_globals, safe_locals))
+    safe_locals = {
+        "date_methods": date_methods,
+        "unstructured_data": unstructured_data,
+    }
+    return eval(compile(expression, "<fake_rule>", "eval"), safe_globals, safe_locals)
 
 
 def _parse_call_arguments(raw_args: str):
@@ -154,6 +182,6 @@ def _is_allowed_internal_expression(node: ast.AST) -> bool:
     for child in ast.walk(node):
         if not isinstance(child, allowed_nodes):
             return False
-        if isinstance(child, ast.Name) and child.id != "date_methods":
+        if isinstance(child, ast.Name) and child.id not in ("date_methods", "unstructured_data"):
             return False
     return True

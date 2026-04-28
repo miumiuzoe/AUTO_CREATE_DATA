@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict
 
 
@@ -31,3 +32,19 @@ class ProtocolOption:
     obj_guid: str
     sys_id: str
     data: Dict[str, Any]
+
+
+@dataclass
+class ZipBinaryEntry:
+    """ZIP 包内的一个额外二进制文件条目。"""
+
+    relative_path: Path
+    content: bytes
+
+
+@dataclass
+class GeneratedFieldValue:
+    """字段值及其附带生成的 ZIP 文件条目。"""
+
+    field_value: str
+    zip_entries: list[ZipBinaryEntry] = field(default_factory=list)
