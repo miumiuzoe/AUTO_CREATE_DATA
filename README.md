@@ -1,11 +1,12 @@
 # AUTO_CREATE_DATA
 
-根据协议英文名从数据库查询协议和字段信息，按配置规则生成测试数据。项目当前提供两个独立入口：
+根据协议英文名从数据库查询协议和字段信息，按配置规则生成测试数据。项目当前提供三个独立入口：
 
 - `auto_create_data.py`：生成普通 `.bcp` 文件
 - `zip_create_data.py`：生成包含 `.bcp`、模板 XML 以及可选非结构化附件的 `.zip` 压缩包
+- `batch_create_data.py`：按脚本内自定义内容批量生成 Tab 分隔的 `.bcp` 文件
 
-两个入口都支持一次输入多个协议英文名，多个协议之间用英文逗号 `,` 分隔。
+`auto_create_data.py` 和 `zip_create_data.py` 支持一次输入多个协议英文名，多个协议之间用英文逗号 `,` 分隔。`batch_create_data.py` 不需要输入协议英文名，也不查询数据库，数据内容和文件名都在脚本中自定义。
 
 ## 目录结构
 
@@ -13,9 +14,11 @@
 AUTO_CREATE_DATA/
 ├─ auto_create_data.py          # 普通 BCP 生成入口
 ├─ zip_create_data.py           # ZIP 包生成入口
+├─ batch_create_data.py         # 自定义批量 BCP 生成入口
 ├─ common/                      # 公共能力：数据库、配置读取、协议选择、假数据、文件命名
 ├─ features/
 │  ├─ bcp/                      # 普通 BCP 功能模块
+│  ├─ batch_bcp/                # 自定义批量 BCP 功能模块
 │  └─ zip_package/              # ZIP 包功能模块
 ├─ config/
 │  ├─ database.yml              # 数据库连接配置
@@ -121,6 +124,59 @@ ABC_PROTOCOL,XYZ_PROTOCOL
 ```text
 {sys_id}-310000-{10位时间戳}-{随机五位数}-{协议英文名}-0.bcp
 ```
+
+## 自定义批量生成 BCP
+
+```bash
+python batch_create_data.py
+```
+
+该入口不需要输入协议英文名，不查询数据库。需要生成的数据内容、文件数量、每个文件的数据条数、文件名格式都在 `features/batch_bcp/main.py` 中修改。
+
+顶部配置：
+
+```python
+# 输出目录。设置为 None 时写入项目默认 output 目录。
+OUTPUT_DIR = None
+
+# 每个文件生成的数据条数。
+ROWS_PER_FILE = 100
+
+# 需要生成的文件数量。
+FILE_COUNT = 1
+```
+
+每条数据在 `build_record()` 中自定义，字段之间使用 `\t` 分隔：
+
+```python
+def build_record() -> str:
+    """自定义每条数据的内容，字段之间使用 Tab 分隔。"""
+    data = f"330300\t程波\t11494878168\t{faker.phone_number()}\t12351"
+    return data
+```
+
+文件名在 `build_file_name()` 中自定义：
+
+```python
+def build_file_name(sequence: int, curday: str, timestamp: str) -> str:
+    """自定义输出文件名，sequence 从 00000 开始递增。"""
+    x = f"{sequence:05d}"
+    file_name = f"501-330000-{curday}-{timestamp}-{x}.bcp"
+    return file_name
+```
+
+默认文件名示例：
+
+```text
+501-330000-20260612-1781234567-00000.bcp
+501-330000-20260612-1781234567-00001.bcp
+```
+
+其中：
+
+- `curday`：当天日期，格式为 `YYYYMMDD`
+- `timestamp`：10 位秒级时间戳
+- `x`：从 `00000` 开始递增的五位序号，每生成一个新文件递增一次
 
 ## 生成 ZIP 包
 
